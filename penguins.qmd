@@ -1,8 +1,11 @@
 ---
 title: "NeuoTrialomics"
-format: dashboard
 logo: stride_lab_logo_transparent.png
 server: shiny
+format: 
+  dashboard:
+    scrolling: true 
+
 ---
 
 ```{python}
@@ -19,8 +22,6 @@ import pandas as pd
 import plotly.express as px
 ```
 
-## Row {.flow}
-
 ```{python}
 #| title: Filter Options
 #| expandable: false
@@ -28,21 +29,38 @@ import plotly.express as px
 penguins = load_penguins()
 df = pd.read_csv("data_for_dashboard.csv")
 
-cluster_options = ['Show All'] + list(df['cluster'].unique())
-ui.input_select("cluster_name2", "Select Cluster", choices=cluster_options, selected='Show All')
+cluster_options = ['Show All (C)'] + list(df['cluster'].unique())
+phase_options = ['Show All (P)'] + list(df['phase'].unique())
+status_options = ['Show All (S)'] + list(df['overall_status'].unique())
+```
 
+## {.sidebar}
+```{python}
+ui.input_select("cluster_name2", "Select Cluster", choices=cluster_options, selected='Show All (C)')
+ui.input_select("phase_name2", "Select Phase", choices=phase_options, selected='Show All (P)')
+ui.input_select("status_name2", "Select Status", choices=status_options, selected='Show All (S)')
 ```
 
 ## Row
+
+### Column {.tabset width="80%"}
 
 ```{python}
 @render_widget  
 def tane_scatter():  
     cluster = input.cluster_name2()
-    if cluster == 'Show All':
-        filtered_df = df
-    else:
-        filtered_df = df[df['cluster'] == cluster]
+    phase = input.phase_name2()
+    status = input.status_name2()
+
+    filtered_df = df
+    if cluster != 'Show All (C)':
+        filtered_df = filtered_df[filtered_df['cluster'] == cluster]
+    
+    if phase != 'Show All (P)':  # Assuming "Show All (P)" is the label for showing all phases
+        filtered_df = filtered_df[filtered_df['phase'] == phase]
+    
+    if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
+        filtered_df = filtered_df[filtered_df['overall_status'] == status]
 
     scatterplot = px.scatter(
         filtered_df, 
@@ -61,14 +79,25 @@ def tane_scatter():
     return scatterplot  
 ```
 
+### Column
+
 ```{python}
 @render_widget  
 def phase_bar_chart():  
     cluster = input.cluster_name2()
-    if cluster == 'Show All':
-        filtered_df = df
-    else:
-        filtered_df = df[df['cluster'] == cluster]
+    phase = input.phase_name2()
+    status = input.status_name2()
+
+    filtered_df = df
+    if cluster != 'Show All (C)':
+        filtered_df = filtered_df[filtered_df['cluster'] == cluster]
+    
+    if phase != 'Show All (P)':  # Assuming "Show All (P)" is the label for showing all phases
+        filtered_df = filtered_df[filtered_df['phase'] == phase]
+    
+    if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
+        filtered_df = filtered_df[filtered_df['overall_status'] == status]
+    
     phase_order = [
         'Early Phase 1',
         'Phase 1',
@@ -97,4 +126,42 @@ def phase_bar_chart():
     bar_chart.update_traces(textposition='outside', textfont_size=12)
 
     return bar_chart 
+```
+
+```{python}
+@render_widget
+def status_bar_chart():
+    cluster = input.cluster_name2()
+    phase = input.phase_name2()
+    status = input.status_name2()
+
+    filtered_df = df
+    if cluster != 'Show All (C)':
+        filtered_df = filtered_df[filtered_df['cluster'] == cluster]
+    
+    if phase != 'Show All (P)':  # Assuming "Show All (P)" is the label for showing all phases
+        filtered_df = filtered_df[filtered_df['phase'] == phase]
+    
+    if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
+        filtered_df = filtered_df[filtered_df['overall_status'] == status]
+    
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['overall_status'].value_counts().reset_index()
+    status_counts.columns = ['overall_status', 'count']
+    
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='overall_status', 
+        y='count',  # Correctly specify the y-axis as the count
+        title="Distribution of Overall Status",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel1,
+        orientation='v'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
 ```
