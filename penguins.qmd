@@ -2,6 +2,7 @@
 title: "NeuoTrialomics"
 logo: stride_lab_logo_transparent.png
 server: shiny
+favicon: favicon.ico
 format: 
   dashboard:
     scrolling: true 
@@ -41,16 +42,15 @@ ui.input_select("phase_name2", "Select Phase", choices=phase_options, selected='
 ui.input_select("status_name2", "Select Status", choices=status_options, selected='Show All (S)')
 ```
 
-## Row
-
-### Column {.tabset width="80%"}
-
 ```{python}
-@render_widget  
-def tane_scatter():  
+@reactive.calc
+def filtered_trials():
     cluster = input.cluster_name2()
     phase = input.phase_name2()
     status = input.status_name2()
+
+    #data = penguins[penguins["species"].isin(input.species())]
+    #data = data[data["island"].isin(input.islands())]
 
     filtered_df = df
     if cluster != 'Show All (C)':
@@ -62,6 +62,18 @@ def tane_scatter():
     if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
         filtered_df = filtered_df[filtered_df['overall_status'] == status]
 
+    return filtered_df
+```
+
+## Row
+
+### Column {.tabset width="80%"}
+
+```{python}
+@render_widget  
+def tane_scatter():  
+    filtered_df = filtered_trials()
+    cluster = input.cluster_name2()
     scatterplot = px.scatter(
         filtered_df, 
         x='x', 
@@ -79,25 +91,27 @@ def tane_scatter():
     return scatterplot  
 ```
 
+```{python}
+#| height: 50%
+#| padding: 0;
+from itables import show
+#show(df, buttons = ['copy', 'excel', 'pdf'])
+from IPython.display import Markdown, HTML
+from tabulate import tabulate
+
+df_to_show = df[['nct_id','brief_title','phase','overall_status','cluster']]
+
+#Markdown(df_to_show.to_markdown(index = False))
+show(df_to_show, paging=True, buttons = ['excel'])
+```
+
 ### Column
 
 ```{python}
 @render_widget  
 def phase_bar_chart():  
-    cluster = input.cluster_name2()
-    phase = input.phase_name2()
-    status = input.status_name2()
+    filtered_df = filtered_trials()
 
-    filtered_df = df
-    if cluster != 'Show All (C)':
-        filtered_df = filtered_df[filtered_df['cluster'] == cluster]
-    
-    if phase != 'Show All (P)':  # Assuming "Show All (P)" is the label for showing all phases
-        filtered_df = filtered_df[filtered_df['phase'] == phase]
-    
-    if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
-        filtered_df = filtered_df[filtered_df['overall_status'] == status]
-    
     phase_order = [
         'Early Phase 1',
         'Phase 1',
@@ -131,20 +145,8 @@ def phase_bar_chart():
 ```{python}
 @render_widget
 def status_bar_chart():
-    cluster = input.cluster_name2()
-    phase = input.phase_name2()
-    status = input.status_name2()
+    filtered_df = filtered_trials()
 
-    filtered_df = df
-    if cluster != 'Show All (C)':
-        filtered_df = filtered_df[filtered_df['cluster'] == cluster]
-    
-    if phase != 'Show All (P)':  # Assuming "Show All (P)" is the label for showing all phases
-        filtered_df = filtered_df[filtered_df['phase'] == phase]
-    
-    if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
-        filtered_df = filtered_df[filtered_df['overall_status'] == status]
-    
     # Count the occurrences of each overall status
     status_counts = filtered_df['overall_status'].value_counts().reset_index()
     status_counts.columns = ['overall_status', 'count']
