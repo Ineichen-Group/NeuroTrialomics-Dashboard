@@ -1,0 +1,9 @@
+__pycache__/
+**.ipynb_checkpoints
+.virtual_documents
+**.DS_Store
+
+*-app.py
+*_files/
+*.html
+/.quarto/

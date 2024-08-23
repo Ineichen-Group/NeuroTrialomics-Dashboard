@@ -1,0 +1,83 @@
+---
+title: "Scatterplot Dashboard"
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    embed-resources: true
+filters:
+  - cluster
+---
+
+```{python}
+#| echo: true
+#| warning: false
+#| tbl-cap-location: top 
+import pandas as pd
+from bokeh.io import output_file, save, show
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, Select, HoverTool, CustomJS
+from bokeh.layouts import column
+
+# Load your data
+df = pd.read_csv("data_for_dashboard.csv")
+```
+
+# Plot
+```{python}
+# Create a ColumnDataSource from the data
+source = ColumnDataSource(df)
+
+# Create a scatter plot with Bokeh
+p = figure(title="t-SNE Visualization of ALL Studies", width=900, height=700)
+scatter = p.scatter(x='x', y='y', source=source, size=10, color='Color', line_color='DarkSlateGrey')
+
+# Add hover tool to show additional information
+hover = HoverTool(tooltips=[("NCT ID", "@nct_id"), ("Title", "@brief_title")])
+p.add_tools(hover)
+
+# Create a dropdown widget for filtering by "cluster"
+cluster_options = ['Show All'] + list(df['cluster'].unique())
+cluster_select = Select(title="Cluster", value="Show All", options=cluster_options)
+
+# Define a JavaScript callback to update the plot based on the selected cluster
+callback = CustomJS(args=dict(source=source, original_source=source.data, select=cluster_select), code="""
+    const cluster = select.value;
+    const data = source.data;
+    const original = original_source;
+    
+    // Reset to original data
+    Object.keys(original).forEach(function(key){
+        data[key] = original[key];
+    });
+
+    if (cluster != 'Show All') {
+        const indices = [];
+        for (let i = 0; i < data['cluster'].length; i++) {
+            if (data['cluster'][i] === cluster) {
+                indices.push(i);
+            }
+        }
+        Object.keys(data).forEach(function(key){
+            data[key] = indices.map(i => original[key][i]);
+        });
+    }
+
+    source.change.emit();
+""")
+
+# Attach the JavaScript callback to the dropdown widget
+cluster_select.js_on_change('value', callback)
+
+# Arrange the layout
+layout = column(cluster_select, p)
+
+# Output the file
+output_file("naurotrialomics.html")
+
+# Save the layout as a standalone HTML file
+save(layout)
+
+# Optionally, also show the plot in the notebook environment
+show(layout)
+```
