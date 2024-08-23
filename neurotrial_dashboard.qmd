@@ -6,7 +6,9 @@ favicon: favicon.ico
 format: 
   dashboard:
     scrolling: true 
-
+    nav-buttons:
+      - icon: github
+        href: https://github.com/Ineichen-Group/NeuroTrialomics-Dashboard
 ---
 
 ```{python}
@@ -31,6 +33,10 @@ df = pd.read_csv("data_for_dashboard.csv")
 cluster_options = ['Show All (C)'] + list(df['cluster'].unique())
 phase_options = ['Show All (P)'] + list(df['phase'].unique())
 status_options = ['Show All (S)'] + list(df['overall_status'].unique())
+agency_options = ['Show All (A)'] + list(df['agency_class'].unique())
+
+min_year = int(df['start_year'].min())
+max_year = int(df['start_year'].max())
 ```
 
 ## {.sidebar}
@@ -38,6 +44,11 @@ status_options = ['Show All (S)'] + list(df['overall_status'].unique())
 ui.input_select("cluster_name2", "Select Cluster", choices=cluster_options, selected='Show All (C)')
 ui.input_select("phase_name2", "Select Phase", choices=phase_options, selected='Show All (P)')
 ui.input_select("status_name2", "Select Status", choices=status_options, selected='Show All (S)')
+ui.input_select("agency_type2", "Select Lead Sponsor Category", choices=agency_options, selected='Show All (A)')
+
+# Add numeric input fields for the minimum and maximum start year
+ui.input_numeric("min_year", "Minimum Start Year", value=min_year, min=min_year, max=max_year)
+ui.input_numeric("max_year", "Maximum Start Year", value=max_year, min=min_year, max=max_year)
 ```
 
 ```{python}
@@ -46,6 +57,9 @@ def filtered_trials():
     cluster = input.cluster_name2()
     phase = input.phase_name2()
     status = input.status_name2()
+    min_year_selected = input.min_year()
+    max_year_selected = input.max_year()
+    agency= input.agency_type2()
 
     filtered_df = df
     if cluster != 'Show All (C)':
@@ -56,13 +70,22 @@ def filtered_trials():
     
     if status != 'Show All (S)':  # Assuming "Show All (S)" is the label for showing all statuses
         filtered_df = filtered_df[filtered_df['overall_status'] == status]
+    
+    if agency != 'Show All (A)':  # Assuming "Show All (S)" is the label for showing all statuses
+        filtered_df = filtered_df[filtered_df['agency_class'] == agency]
+    
+    filtered_df["start_year"] = filtered_df["start_year"].astype(int)
+    filtered_df = filtered_df[(filtered_df['start_year'] >= min_year_selected) & 
+                              (filtered_df['start_year'] <= max_year_selected)]
 
     return filtered_df
 ```
 
-## Row
+# Viz
 
-### Column {.tabset width="80%"}
+## Row {height=50%}
+
+### Column {.tabset}
 
 ```{python}
 #| title: 2D t-SNE map
@@ -76,7 +99,7 @@ def tsne_scatter():
         x='x', 
         y='y', 
         color='cluster',
-        hover_data={'x': False, 'y': False, 'nct_id': True, 'brief_title': True},
+        hover_data={'x': False, 'y': False, 'nct_id': True,  'start_year': True, 'brief_title': True},
         title=f"t-SNE Visualization of {'All Clusters' if cluster == 'Show All' else cluster}",
         labels={'x': 't-SNE X', 'y': 't-SNE Y'},
         template="plotly_white",
@@ -87,6 +110,35 @@ def tsne_scatter():
         ##)
     return scatterplot  
 ```
+```{python}
+#| title: Sponsor Names
+@render_widget
+def lead_sponsor_bar_chart():
+    filtered_df = filtered_trials()
+
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['sponsor_name'].value_counts().reset_index()
+    status_counts.columns = ['sponsor_name', 'count']
+    
+    #status_counts['sponsor_name'] = status_counts['sponsor_name'].apply(lambda x: ' '.join(x.split()[:3]))
+    status_counts = status_counts.sort_values(by='count', ascending=True)
+
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='count', 
+        y='sponsor_name',  # Correctly specify the y-axis as the count
+        title="Distribution of Start Year",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel1,
+        orientation='h'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
+```
 
 ```{python}
 #| title: Filtered data
@@ -95,7 +147,7 @@ def tsne_scatter():
 def datagrid():
     filtered_df = filtered_trials()
   
-    df_to_show = filtered_df[['nct_id','brief_title','phase','overall_status','cluster']]
+    df_to_show = filtered_df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class', 'sponsor_name']]
     return render.DataGrid(
         df_to_show,
         width="100%",
@@ -103,20 +155,66 @@ def datagrid():
     )
 ```
 
-```{python}
-#| title: Raw data
-#| height: 50%
-#| padding: 0;
-from itables import show
-
-df_to_show = df[['nct_id','brief_title','phase','overall_status','cluster']]
-df_to_show['nct_id'] = df_to_show['nct_id'].apply(
-    lambda x: f'<a href="https://clinicaltrials.gov/study/{x}" target="_blank">{x}</a>'
-)
-show(df_to_show, paging=True, buttons = ['csv'], classes="display")
-```
+## Row
 
 ### Column
+```{python}
+@render_widget
+def start_year_bar_chart():
+    filtered_df = filtered_trials()
+
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['start_year'].value_counts().reset_index()
+    status_counts.columns = ['start_year', 'count']
+    
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='start_year', 
+        y='count',  # Correctly specify the y-axis as the count
+        title="Distribution of Start Year",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel1,
+        orientation='v'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
+```
+### Column
+
+```{python}
+@render_widget
+def lead_agency_bar_chart():
+    filtered_df = filtered_trials()
+
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['agency_class'].value_counts().reset_index()
+    status_counts.columns = ['agency_class', 'count']
+    
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='agency_class', 
+        y='count',  # Correctly specify the y-axis as the count
+        title="Distribution of Start Year",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel1,
+        orientation='v'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
+```
+
+
+## Row
+
+### Column {height=50%}
 
 ```{python}
 @render_widget  
@@ -153,6 +251,9 @@ def phase_bar_chart():
     return bar_chart 
 ```
 
+### Column {height=50%}
+
+
 ```{python}
 @render_widget
 def status_bar_chart():
@@ -178,3 +279,19 @@ def status_bar_chart():
     
     return bar_chart
 ```
+
+# Raw Data
+
+```{python}
+#| title: Raw data
+#| width: 100%
+#| padding: 0;
+from itables import show
+
+df_to_show = df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class', 'sponsor_name']]
+df_to_show['nct_id'] = df_to_show['nct_id'].apply(
+    lambda x: f'<a href="https://clinicaltrials.gov/study/{x}" target="_blank">{x}</a>'
+)
+show(df_to_show, paging=True, buttons = ['csv'], classes="display")
+```
+
