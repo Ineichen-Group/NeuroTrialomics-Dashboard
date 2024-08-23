@@ -17,7 +17,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from shiny import render, reactive, ui
 from shinywidgets import render_widget  
-from palmerpenguins import load_penguins
 
 import pandas as pd
 import plotly.express as px
@@ -27,7 +26,6 @@ import plotly.express as px
 #| title: Filter Options
 #| expandable: false
 
-penguins = load_penguins()
 df = pd.read_csv("data_for_dashboard.csv")
 
 cluster_options = ['Show All (C)'] + list(df['cluster'].unique())
@@ -49,9 +47,6 @@ def filtered_trials():
     phase = input.phase_name2()
     status = input.status_name2()
 
-    #data = penguins[penguins["species"].isin(input.species())]
-    #data = data[data["island"].isin(input.islands())]
-
     filtered_df = df
     if cluster != 'Show All (C)':
         filtered_df = filtered_df[filtered_df['cluster'] == cluster]
@@ -70,8 +65,10 @@ def filtered_trials():
 ### Column {.tabset width="80%"}
 
 ```{python}
+#| title: 2D t-SNE map
+
 @render_widget  
-def tane_scatter():  
+def tsne_scatter():  
     filtered_df = filtered_trials()
     cluster = input.cluster_name2()
     scatterplot = px.scatter(
@@ -92,17 +89,31 @@ def tane_scatter():
 ```
 
 ```{python}
+#| title: Filtered data
+
+@render.data_frame
+def datagrid():
+    filtered_df = filtered_trials()
+  
+    df_to_show = filtered_df[['nct_id','brief_title','phase','overall_status','cluster']]
+    return render.DataGrid(
+        df_to_show,
+        width="100%",
+        filters=True,
+    )
+```
+
+```{python}
+#| title: Raw data
 #| height: 50%
 #| padding: 0;
 from itables import show
-#show(df, buttons = ['copy', 'excel', 'pdf'])
-from IPython.display import Markdown, HTML
-from tabulate import tabulate
 
 df_to_show = df[['nct_id','brief_title','phase','overall_status','cluster']]
-
-#Markdown(df_to_show.to_markdown(index = False))
-show(df_to_show, paging=True, buttons = ['excel'])
+df_to_show['nct_id'] = df_to_show['nct_id'].apply(
+    lambda x: f'<a href="https://clinicaltrials.gov/study/{x}" target="_blank">{x}</a>'
+)
+show(df_to_show, paging=True, buttons = ['csv'], classes="display")
 ```
 
 ### Column
