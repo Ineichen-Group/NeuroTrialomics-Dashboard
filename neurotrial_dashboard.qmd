@@ -83,7 +83,7 @@ def filtered_trials():
 
 # Viz
 
-## Row {height=50%}
+## Row {height=40%}
 
 ### Column {.tabset}
 
@@ -110,35 +110,6 @@ def tsne_scatter():
         ##)
     return scatterplot  
 ```
-```{python}
-#| title: Sponsor Names
-@render_widget
-def lead_sponsor_bar_chart():
-    filtered_df = filtered_trials()
-
-    # Count the occurrences of each overall status
-    status_counts = filtered_df['sponsor_name'].value_counts().reset_index()
-    status_counts.columns = ['sponsor_name', 'count']
-    
-    #status_counts['sponsor_name'] = status_counts['sponsor_name'].apply(lambda x: ' '.join(x.split()[:3]))
-    status_counts = status_counts.sort_values(by='count', ascending=True)
-
-    # Create the bar chart with the correct x and y axes
-    bar_chart = px.bar(
-        status_counts, 
-        x='count', 
-        y='sponsor_name',  # Correctly specify the y-axis as the count
-        title="Distribution of Start Year",
-        template="plotly_white",
-        text='count',  # Display counts on top of the bars
-        color_discrete_sequence=px.colors.qualitative.Pastel1,
-        orientation='h'
-    )
-
-    bar_chart.update_traces(textposition='outside', textfont_size=12)
-    
-    return bar_chart
-```
 
 ```{python}
 #| title: Filtered data
@@ -147,7 +118,7 @@ def lead_sponsor_bar_chart():
 def datagrid():
     filtered_df = filtered_trials()
   
-    df_to_show = filtered_df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class', 'sponsor_name']]
+    df_to_show = filtered_df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class']]
     return render.DataGrid(
         df_to_show,
         width="100%",
@@ -175,7 +146,7 @@ def start_year_bar_chart():
         title="Distribution of Start Year",
         template="plotly_white",
         text='count',  # Display counts on top of the bars
-        color_discrete_sequence=px.colors.qualitative.Pastel1,
+        color_discrete_sequence=px.colors.qualitative.Pastel,
         orientation='v'
     )
 
@@ -193,17 +164,17 @@ def lead_agency_bar_chart():
     # Count the occurrences of each overall status
     status_counts = filtered_df['agency_class'].value_counts().reset_index()
     status_counts.columns = ['agency_class', 'count']
-    
+    status_counts = status_counts.sort_values(by='count', ascending=True)
     # Create the bar chart with the correct x and y axes
     bar_chart = px.bar(
         status_counts, 
-        x='agency_class', 
-        y='count',  # Correctly specify the y-axis as the count
-        title="Distribution of Start Year",
+        x='count', 
+        y='agency_class',  # Correctly specify the y-axis as the count
+        title="Distribution of Lead Sponsor Category",
         template="plotly_white",
         text='count',  # Display counts on top of the bars
-        color_discrete_sequence=px.colors.qualitative.Pastel1,
-        orientation='v'
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        orientation='h'
     )
 
     bar_chart.update_traces(textposition='outside', textfont_size=12)
@@ -243,7 +214,7 @@ def phase_bar_chart():
         title="Distribution of Phases",
         template="plotly_white",
         category_orders={'phase': phase_order},
-        color_discrete_sequence=px.colors.qualitative.Pastel1,  # Set a more vibrant color scale
+        color_discrete_sequence=px.colors.qualitative.Pastel,  # Set a more vibrant color scale
         text='count'  # Display counts on top of the bars
     )
     bar_chart.update_traces(textposition='outside', textfont_size=12)
@@ -262,17 +233,76 @@ def status_bar_chart():
     # Count the occurrences of each overall status
     status_counts = filtered_df['overall_status'].value_counts().reset_index()
     status_counts.columns = ['overall_status', 'count']
-    
+    status_counts = status_counts.sort_values(by='count', ascending=True)
+
     # Create the bar chart with the correct x and y axes
     bar_chart = px.bar(
         status_counts, 
-        x='overall_status', 
-        y='count',  # Correctly specify the y-axis as the count
+        x='count', 
+        y='overall_status',  # Correctly specify the y-axis as the count
         title="Distribution of Overall Status",
         template="plotly_white",
         text='count',  # Display counts on top of the bars
-        color_discrete_sequence=px.colors.qualitative.Pastel1,
-        orientation='v'
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        orientation='h'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
+```
+## Row
+
+### Column {height=50%}
+
+```{python}
+@render_widget
+def allocation_bar_chart():
+    filtered_df = filtered_trials()
+
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['allocation'].value_counts().reset_index()
+    status_counts.columns = ['allocation', 'count']
+    status_counts = status_counts.sort_values(by='count', ascending=True)
+
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='count', 
+        y='allocation',  # Correctly specify the y-axis as the count
+        title="Distribution of Allocation",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        orientation='h'
+    )
+
+    bar_chart.update_traces(textposition='outside', textfont_size=12)
+    
+    return bar_chart
+```
+### Column {height=50%}
+
+```{python}
+@render_widget
+def masking_bar_chart():
+    filtered_df = filtered_trials()
+
+    # Count the occurrences of each overall status
+    status_counts = filtered_df['masking'].value_counts().reset_index()
+    status_counts.columns = ['masking', 'count']
+    status_counts = status_counts.sort_values(by='count', ascending=True)
+
+    # Create the bar chart with the correct x and y axes
+    bar_chart = px.bar(
+        status_counts, 
+        x='count', 
+        y='masking',  # Correctly specify the y-axis as the count
+        title="Distribution of Masking",
+        template="plotly_white",
+        text='count',  # Display counts on top of the bars
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        orientation='h'
     )
 
     bar_chart.update_traces(textposition='outside', textfont_size=12)
@@ -288,10 +318,12 @@ def status_bar_chart():
 #| padding: 0;
 from itables import show
 
-df_to_show = df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class', 'sponsor_name']]
+df_to_show = df[['nct_id','brief_title','phase','overall_status', 'start_year', 'cluster', 'allocation', 'masking', 'agency_class']]
 df_to_show['nct_id'] = df_to_show['nct_id'].apply(
     lambda x: f'<a href="https://clinicaltrials.gov/study/{x}" target="_blank">{x}</a>'
 )
 show(df_to_show, paging=True, buttons = ['csv'], classes="display")
 ```
+
+
 
