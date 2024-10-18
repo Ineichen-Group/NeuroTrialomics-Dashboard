@@ -1,5 +1,5 @@
 ---
-title: "NeuoTrialomics"
+title: "NeuroTrialomics"
 logo: stride_lab_logo_transparent.png
 server: shiny
 favicon: favicon.ico
