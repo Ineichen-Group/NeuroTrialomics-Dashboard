@@ -42,7 +42,7 @@ rsconnect deploy shiny /path/to/app --name <NAME> --title my-app
 ```
 
 where:
-- <NAME>: This specifies the account or server name that you have set up in your rsconnect configuration. It determines where the app will be deployed.
+- < NAME >: This specifies the account or server name that you have set up in your rsconnect configuration. It determines where the app will be deployed.
 - my-app: This sets the title of the application as it will appear in the deployment environment.
 
 The /path/to/app should contain the above mentioned files and all the required data used for the app to run, i.e., the upper most folder of the whole project.
