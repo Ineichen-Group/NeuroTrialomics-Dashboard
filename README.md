@@ -8,7 +8,7 @@ This dashboard was created using [Quarto Dashboards with Shiny for Python](https
 
 You can install the required libraries in a local environment via:
 ```
-conda create --name neurotrial_dashboard --file requirements.txt
+conda env create -f environment.yml
 ```
 
 ## Code and local testing
